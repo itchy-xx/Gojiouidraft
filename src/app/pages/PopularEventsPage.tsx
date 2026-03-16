@@ -1,0 +1,137 @@
+import React from 'react';
+import { useNavigate } from 'react-router';
+import { useApp } from '../context/AppContext';
+import { ArrowLeft, Calendar, Clock, MapPin, Users } from 'lucide-react';
+
+export const PopularEventsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { activities, currentUser, setSelectedActivity } = useApp();
+
+  // Sort by most participants
+  const popularEvents = [...activities].sort((a, b) => b.currentParticipants - a.currentParticipants);
+
+  const handleActivityClick = (activity: any) => {
+    setSelectedActivity(activity);
+    navigate(`/activity/${activity.id}`);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const formatTime = (timeStr: string) => {
+    // Convert 24-hour time to 12-hour format
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minutes} ${period}`;
+  };
+
+  const formatDateTimeRange = (activity: any) => {
+    const date = formatDate(activity.date);
+    const start = formatTime(activity.startTime);
+    const end = formatTime(activity.endTime);
+    return `${date} • ${start} – ${end}`;
+  };
+
+  const getCategoryColor = (category: string) => {
+    const colors: { [key: string]: string } = {
+      'Sports': 'bg-orange-500',
+      'Food': 'bg-red-500',
+      'Social': 'bg-blue-500',
+      'Community': 'bg-green-500',
+      'Arts': 'bg-purple-500',
+      'Culture': 'bg-pink-500',
+    };
+    return colors[category] || 'bg-gray-500';
+  };
+
+  return (
+    <div className="bg-[#f5f5f7] min-h-screen">
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/home')}
+            className="p-2 hover:bg-white rounded-full transition-colors"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold">Popular Events</h1>
+            <p className="text-sm text-gray-600">{popularEvents.length} events sorted by popularity</p>
+          </div>
+        </div>
+
+        {/* Events List */}
+        <div className="space-y-4">
+          {popularEvents.map((activity, index) => (
+            <div
+              key={activity.id}
+              onClick={() => handleActivityClick(activity)}
+              className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-4 p-4"
+            >
+              {/* Image */}
+              <div className="w-64 h-48 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 relative">
+                <img 
+                  src={activity.imageUrl} 
+                  alt={activity.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-3 left-3 flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${getCategoryColor(activity.category)}`}>
+                    {activity.category}
+                  </span>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-500 text-white">
+                    #{index + 1}
+                  </span>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 flex flex-col justify-between py-2">
+                <div>
+                  <h3 className="font-semibold text-xl mb-2">{activity.title}</h3>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>{formatDateTimeRange(activity)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>{activity.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span className="font-semibold text-[#5661f6]">
+                        {activity.currentParticipants}/{activity.maxParticipants} participants
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 pt-1">Organised by {activity.organiserName}</p>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="flex items-center gap-4 mt-3 pt-3 border-t">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-2xl">🔥</span>
+                    <span className="font-semibold text-orange-600">
+                      {Math.max(activity.maxParticipants - activity.currentParticipants, 0)} spots left
+                    </span>
+                  </div>
+                  {activity.interestedUsers.includes(currentUser?.id || '') && (
+                    <span className="px-3 py-1 bg-[#5661f6] text-white text-xs rounded-full font-medium">
+                      You're interested
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
